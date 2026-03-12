@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+
+<meta charset="UTF-8">
+<title>Reservoir Dashboard</title>
+
+  
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+
+<style>
+body{font-family:Arial;margin:40px;}
+textarea{width:800px;height:160px;}
+button{padding:8px 20px;margin:5px;cursor:pointer;}
+table{border-collapse:collapse;margin-top:10px;margin-bottom:30px;}
+th,td{border:1px solid #ccc;padding:6px;text-align:center;}
+thead{background:#f2f2f2;}
+tfoot{background:#e8f4ff;font-weight:bold;}
+.title{font-size:20px;font-weight:bold;margin-top:30px;}
+canvas{max-width:900px;margin-top:20px;}
+</style>
+
+</head>
+
+<body>
+
+<h3>Paste Data</h3>
+
+<textarea id="excelData"></textarea>
+
+<br><br>
+
+<button onclick="generateTables()">Generate Data</button>
+<button onclick="exportExcel()">Export</button>
+
+<div id="tables"></div>
+<div id="charts"></div>
+
+<script>
+
+let inflowTableData=[]
+let outflowTableData=[]
+let inflowAvg=[]
+let outflowAvg=[]
+let reservoirName=""
+let provinceName=""
+
+const monthMap={
+"มกราคม":"Jan","กุมภาพันธ์":"Feb","มีนาคม":"Mar","เมษายน":"Apr",
+"พฤษภาคม":"May","มิถุนายน":"Jun","กรกฎาคม":"Jul","สิงหาคม":"Aug",
+"กันยายน":"Sep","ตุลาคม":"Oct","พฤศจิกายน":"Nov","ธันวาคม":"Dec"
+}
+
+const months=["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"]
+
+function generateTables(){
+
+document.getElementById("tables").innerHTML=""
+document.getElementById("charts").innerHTML=""
+
+let raw=document.getElementById("excelData").value
+
+let match=raw.match(/อ่างเก็บน้ำ\s*([^\s]+)/)
+reservoirName = match ? match[1] : "Reservoir"
+
+let provMatch = raw.match(/จ\.([^\s]+)/)
+provinceName = provMatch ? provMatch[1] : ""
+
+let rows=raw.split("\n")
+let data=[]
+
+rows.forEach(r=>{
+
+let c=r.split("\t")
+
+if(c.length<8) return
+
+let parts=c[1].split(" ")
+let monthThai=parts[0]
+let year=parseInt(parts[1])
+
+let month=monthMap[monthThai]
+if(!month) return
+
+let inflow=parseFloat(c[6].replace(/,/g,''))||0
+let outflow=parseFloat(c[7].replace(/,/g,''))||0
+
+if(month==="Jan"||month==="Feb"||month==="Mar"){
+year=year-1
+}
+
+data.push({year,month,inflow,outflow})
+
+})
+
+createTable(data,"inflow")
+createTable(data,"outflow")
+
+document.getElementById("charts").innerHTML=`
+<div class="title">Inflow of อ่างเก็บน้ำ${reservoirName} จ.${provinceName}</div>
+<canvas id="inflowChart"></canvas>
+
+<div class="title">Outflow of อ่างเก็บน้ำ${reservoirName} จ.${provinceName}</div>
+<canvas id="outflowChart"></canvas>
+`
+
+drawCharts()
+
+}
+
+function createTable(data,type){
+
+let years=[...new Set(data.map(d=>d.year))].sort()
+
+let monthSum={}
+let monthCount={}
+
+months.forEach(m=>{
+monthSum[m]=0
+monthCount[m]=0
+})
+
+let grandTotal=0
+
+let table="<div class='title'>"+type+" of อ่างเก็บน้ำ"+reservoirName+" จ."+provinceName+"</div>"
+
+table+="<table>"
+table+="<thead><tr><th>Year</th>"
+
+months.forEach(m=>table+="<th>"+m+"</th>")
+
+table+="<th>Total (MCM)</th></tr></thead><tbody>"
+
+let sheetData=[["Year",...months,"Total"]]
+
+years.forEach(y=>{
+
+let total=0
+let row=[y]
+
+table+="<tr><td>"+y+"</td>"
+
+months.forEach(m=>{
+
+let found=data.find(d=>d.year==y && d.month==m)
+
+if(found){
+
+let value=(type==="inflow")?found.inflow:found.outflow
+
+total+=value
+monthSum[m]+=value
+monthCount[m]++
+
+table+="<td>"+value.toFixed(3)+"</td>"
+row.push(value)
+
+}else{
+
+table+="<td>-</td>"
+row.push("")
+
+}
+
+})
+
+grandTotal+=total
+
+table+="<td><b>"+total.toFixed(3)+"</b></td></tr>"
+
+row.push(total)
+sheetData.push(row)
+
+})
+
+table+="</tbody><tfoot>"
+
+let avgRow=["Average"]
+let avgArray=[]
+
+table+="<tr><th>Average</th>"
+
+months.forEach(m=>{
+
+let avg=monthCount[m]?monthSum[m]/monthCount[m]:0
+
+avgArray.push(avg)
+
+table+="<th>"+(monthCount[m]?avg.toFixed(3):"-")+"</th>"
+avgRow.push(avg)
+
+})
+
+table+="<th>"+grandTotal.toFixed(3)+"</th></tr>"
+
+avgRow.push(grandTotal)
+sheetData.push(avgRow)
+
+table+="</tfoot></table>"
+
+document.getElementById("tables").innerHTML+=table
+
+if(type==="inflow"){
+inflowTableData=sheetData
+inflowAvg=avgArray
+}
+
+if(type==="outflow"){
+outflowTableData=sheetData
+outflowAvg=avgArray
+}
+
+}
+
+function drawCharts(){
+
+drawChart("inflowChart","Inflow",inflowTableData,inflowAvg)
+drawChart("outflowChart","Outflow",outflowTableData,outflowAvg)
+
+}
+
+function drawChart(canvasId,label,tableData,avgData){
+
+let datasets=[]
+
+for(let i=1;i<tableData.length-1;i++){
+
+let row=tableData[i]
+let year=row[0]
+let values=row.slice(1,13)
+
+datasets.push({
+label:year,
+data:values,
+tension:0.3,
+fill:false
+})
+
+}
+
+datasets.push({
+label:"Average",
+data:avgData,
+borderWidth:4,
+borderDash:[8,6],
+tension:0.3
+})
+
+new Chart(document.getElementById(canvasId),{
+type:"line",
+data:{labels:months,datasets:datasets},
+options:{
+responsive:true,
+plugins:{
+title:{
+display:true,
+text:label+" of อ่างเก็บน้ำ"+reservoirName+" จ."+provinceName
+}
+}
+}
+})
+
+}
+
+async function exportExcel(){
+
+let workbook = new ExcelJS.Workbook()
+
+/* -------- INFLOW SHEET -------- */
+
+let sheet1 = workbook.addWorksheet("Inflow")
+
+inflowTableData.forEach(r=>{
+sheet1.addRow(r)
+})
+
+/* add chart image */
+
+let inflowCanvas=document.getElementById("inflowChart")
+
+let inflowImage=inflowCanvas.toDataURL("image/png")
+
+let inflowId=workbook.addImage({
+base64:inflowImage,
+extension:"png"
+})
+
+sheet1.addImage(inflowId,{
+tl:{col:0,row:inflowTableData.length+2},
+ext:{width:900,height:400}
+})
+
+
+/* -------- OUTFLOW SHEET -------- */
+
+let sheet2 = workbook.addWorksheet("Outflow")
+
+outflowTableData.forEach(r=>{
+sheet2.addRow(r)
+})
+
+let outflowCanvas=document.getElementById("outflowChart")
+
+let outflowImage=outflowCanvas.toDataURL("image/png")
+
+let outflowId=workbook.addImage({
+base64:outflowImage,
+extension:"png"
+})
+
+sheet2.addImage(outflowId,{
+tl:{col:0,row:outflowTableData.length+2},
+ext:{width:900,height:400}
+})
+
+
+/* -------- SAVE FILE -------- */
+
+let buffer=await workbook.xlsx.writeBuffer()
+
+saveAs(
+new Blob([buffer]),
+"อ่างเก็บน้ำ"+reservoirName+" จ."+provinceName+".xlsx"
+)
+
+}
+  
+  document.getElementById("excelData").addEventListener("keydown", function(event){
+
+if(event.key==="Enter" && event.ctrlKey===false){
+
+event.preventDefault()
+generateTables()
+
+}
+
+})
+
+</script>
+
+</body>
+</html>
