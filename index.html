@@ -58,9 +58,6 @@ const months=["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb",
 
 function generateTables(){
 
-document.getElementById("tables").innerHTML=""
-document.getElementById("charts").innerHTML=""
-
 let raw=document.getElementById("excelData").value
 
 let match=raw.match(/อ่างเก็บน้ำ\s*([^\s]+)/)
@@ -68,6 +65,24 @@ reservoirName = match ? match[1] : "Reservoir"
 
 let provMatch = raw.match(/จ\.([^\s]+)/)
 provinceName = provMatch ? provMatch[1] : ""
+
+document.getElementById("tables").innerHTML =
+'<div class="sectionRow" id="tableRow"></div>';
+
+document.getElementById("charts").innerHTML=
+'<div class="sectionRow">'+
+
+'<div class="section">'+
+'<div class="title">Inflow of อ่างเก็บน้ำ'+reservoirName+' จ.'+provinceName+'</div>'+
+'<canvas id="inflowChart"></canvas>'+
+'</div>'+
+
+'<div class="section">'+
+'<div class="title">Outflow of อ่างเก็บน้ำ'+reservoirName+' จ.'+provinceName+'</div>'+
+'<canvas id="outflowChart"></canvas>'+
+'</div>'+
+
+'</div>'
 
 let rows=raw.split("\n")
 let data=[]
@@ -98,14 +113,6 @@ data.push({year,month,inflow,outflow})
 
 createTable(data,"inflow")
 createTable(data,"outflow")
-
-document.getElementById("charts").innerHTML=`
-<div class="title">Inflow of อ่างเก็บน้ำ${reservoirName} จ.${provinceName}</div>
-<canvas id="inflowChart"></canvas>
-
-<div class="title">Outflow of อ่างเก็บน้ำ${reservoirName} จ.${provinceName}</div>
-<canvas id="outflowChart"></canvas>
-`
 
 drawCharts()
 
@@ -201,7 +208,13 @@ sheetData.push(avgRow)
 
 table+="</tfoot></table>"
 
-document.getElementById("tables").innerHTML+=table
+let container = document.getElementById("tableRow");
+
+let div = document.createElement("div");
+div.className = "section";
+div.innerHTML = table;
+
+container.appendChild(div);
 
 if(type==="inflow"){
 inflowTableData=sheetData
