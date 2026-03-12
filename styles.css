@@ -46,3 +46,19 @@ background:#e6ffe6;
 font-weight:bold;
 
 }
+
+.sectionRow{
+display:flex;
+gap:40px;
+align-items:flex-start;
+flex-wrap:wrap;
+}
+
+.section{
+flex:1;
+min-width:450px;
+}
+
+.tableBlock{
+margin-bottom:40px;
+}
