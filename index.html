@@ -5,10 +5,178 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reservoir Data Tool</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --accent: #58a6ff;
+  --accent2: #3fb950;
+  --accent3: #f78166;
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --font: 'IBM Plex Sans Thai', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.logo {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+header h1 { font-size: 18px; font-weight: 600; letter-spacing: -.3px; }
+header p  { font-size: 12px; color: var(--text2); font-family: var(--mono); }
+
+/* ── LAYOUT ── */
+.container { max-width: 1400px; margin: 0 auto; padding: 32px 40px; }
+
+/* ── INPUT CARD ── */
+.input-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.input-card h2 {
+  font-size: 14px; font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+/* ── FORMAT BADGE ── */
+.format-detect {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-family: var(--mono);
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  color: var(--text2); background: var(--surface2);
+  transition: all .3s;
+}
+.format-detect.fmt1 { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.1); }
+.format-detect.fmt2 { border-color: var(--accent2); color: var(--accent2); background: rgba(63,185,80,.1); }
+.format-detect .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ── TEXTAREA ── */
+textarea {
+  width: 100%; height: 180px;
+  background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: var(--mono); font-size: 12px;
+  padding: 14px; resize: vertical; outline: none;
+  transition: border-color .2s; line-height: 1.6;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--text2); }
+
+/* ── BUTTONS ── */
+.btn-row {
+  display: flex; gap: 10px; margin-top: 14px;
+  flex-wrap: wrap; align-items: center;
+}
+button {
+  font-family: var(--font); font-size: 14px; font-weight: 500;
+  padding: 9px 22px; border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all .18s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-primary  { background: var(--accent); color: #000; border-color: var(--accent); }
+.btn-primary:hover { background: #79b8ff; }
+.btn-secondary { background: transparent; color: var(--text); }
+.btn-secondary:hover { background: var(--surface2); }
+.btn-export {
+  background: rgba(63,185,80,.15); color: var(--accent2);
+  border-color: var(--accent2); margin-left: auto;
+}
+.btn-export:hover { background: rgba(63,185,80,.25); }
+.btn-export:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── META BAR ── */
+.meta-bar { display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap; }
+.meta-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 18px;
+  flex: 1; min-width: 140px;
+}
+.meta-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.meta-value { font-size: 16px; font-weight: 600; font-family: var(--mono); color: var(--accent); }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-size: 16px; font-weight: 600;
+  margin: 32px 0 16px;
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.badge { font-size: 11px; padding: 2px 10px; border-radius: 20px; font-weight: 500; font-family: var(--mono); }
+.badge-in  { background: rgba(88,166,255,.15); color: var(--accent); }
+.badge-out { background: rgba(247,129,102,.15); color: var(--accent3); }
+
+/* ── TABLE ── */
+.table-scroll {
+  overflow-x: auto;
+  border-radius: 8px; border: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-family: var(--mono); }
+thead th {
+  background: var(--surface2); color: var(--text2);
+  padding: 10px 12px; font-weight: 600;
+  text-transform: uppercase; font-size: 11px; letter-spacing: .5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; text-align: right;
+}
+thead th:first-child { text-align: left; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid rgba(48,54,61,.5); text-align: right; color: var(--text); }
+tbody td:first-child { text-align: left; font-weight: 500; color: var(--accent); }
+tbody tr:hover { background: rgba(88,166,255,.04); }
+tfoot td {
+  padding: 10px 12px; text-align: right; font-weight: 600;
+  background: var(--surface2); color: var(--accent2);
+  border-top: 2px solid var(--border); font-size: 12px;
+}
+tfoot td:first-child { text-align: left; }
+.dash { color: var(--border); }
+
+/* ── CHARTS ── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+@media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.chart-card h3 { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+canvas { max-height: 340px; }
+
+/* ── MISC ── */
+#output { display: none; }
+
+</style>
 </head>
 <body>
 <header>
@@ -49,6 +217,347 @@
     <div class="table-scroll" id="outflowTableDiv"></div>
   </div>
 </div>
-<script src="script.js"></script>
+<script>
+// ── GLOBALS ──────────────────────────────────────────────────────
+let inflowTableData = [], outflowTableData = []
+let inflowAvg = [], outflowAvg = []
+let reservoirName = "", provinceName = ""
+let inflowChartObj = null, outflowChartObj = null
+
+const monthMap = {
+  "มกราคม":"Jan","กุมภาพันธ์":"Feb","มีนาคม":"Mar","เมษายน":"Apr",
+  "พฤษภาคม":"May","มิถุนายน":"Jun","กรกฎาคม":"Jul","สิงหาคม":"Aug",
+  "กันยายน":"Sep","ตุลาคม":"Oct","พฤศจิกายน":"Nov","ธันวาคม":"Dec"
+}
+// ปีน้ำ: เม.ย.–มี.ค.
+const months = ["Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"]
+const earlyMonths = new Set(["Jan","Feb","Mar"])
+
+function toWaterYear(yearBE, month) {
+  return earlyMonths.has(month) ? yearBE - 1 : yearBE
+}
+
+// ── FORMAT DETECTION ─────────────────────────────────────────────
+function trimCols(line) {
+  const c = line.split("\t").map(s => s.trim())
+  while (c.length && c[c.length - 1] === "") c.pop()
+  return c
+}
+
+function detectFormat(raw) {
+  for (const line of raw.split(/\r?\n/)) {
+    const c = trimCols(line)
+    if (c.length >= 10) {
+      const p = c[1]?.split(" ")
+      if (p && monthMap[p[0]] && parseInt(p[1]) > 2400 &&
+          /^(เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ใต้|อีสาน)$/.test(c[2])) return 1
+    }
+    if (c.length === 9) {
+      const p = c[1]?.split(" ")
+      if (p && monthMap[p[0]] && parseInt(p[1]) > 2400 && !isNaN(parseFloat(c[2]))) return 3
+    }
+  }
+  return 2
+}
+
+// ── FORMAT 1 PARSER ──────────────────────────────────────────────
+// [0]ลำดับ [1]เดือน+ปีพ.ศ. [2]ภาค [3]ความจุ [4]น้ำใช้การ
+// [5]ระดับน้ำ [6]น้ำในอ่าง [7]%รนก. [8]ไหลลงอ่าง [9]ระบาย
+function parseFormat1(raw) {
+  const nm = raw.match(/^([^\n\r\t]+?)\s+ภาค(?:เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ใต้)/m)
+  reservoirName = nm ? nm[1].trim() : "Reservoir"
+  provinceName  = ""
+  const data = []
+  raw.split("\n").forEach(r => {
+    const c = r.split("\t")
+    if (c.length < 10) return
+    const p = c[1]?.trim().split(" ")
+    const monthThai = p?.[0], yearBE = parseInt(p?.[1])
+    const month = monthMap[monthThai]
+    if (!month || isNaN(yearBE)) return
+    const inflow  = parseFloat(c[8]?.replace(/,/g, "")) || 0
+    const outflow = parseFloat(c[9]?.replace(/,/g, "")) || 0
+    data.push({ year: toWaterYear(yearBE, month), month, inflow, outflow })
+  })
+  return data
+}
+
+// ── FORMAT 3 PARSER ──────────────────────────────────────────────
+// [0]ลำดับ [1]เดือน+ปีพ.ศ. [2]ความจุ [3]รนก.ต่ำสุด [4]น้ำในอ่าง
+// [5]%รนก. [6]ไหลลงอ่าง [7]ระบาย [8]ปริมาณน้ำที่ใช้การได้
+function parseFormat3(raw) {
+  reservoirName = "Reservoir"; provinceName = ""
+  for (const ln of raw.split(/\r?\n/).slice(0, 10)) {
+    const j = ln.indexOf("\u0E08.")  // "จ."
+    if (j > 0) {
+      let before = ln.slice(0, j).trim()
+      const pre = "\u0E2D\u0E48\u0E32\u0E07\u0E40\u0E01\u0E47\u0E1A\u0E19\u0E49\u0E33"
+      if (before.startsWith(pre)) before = before.slice(pre.length).trim()
+      reservoirName = before
+      provinceName  = ln.slice(j + 2).trim().split(/[\s,]/)[0]
+      break
+    }
+  }
+  const data = []
+  for (const line of raw.split(/\r?\n/)) {
+    const c = trimCols(line)
+    if (c.length !== 9) continue
+    const p = c[1].split(" ")
+    const month = monthMap[p[0]], yearBE = parseInt(p[1])
+    if (!month || !(yearBE > 2400)) continue
+    const inflow  = parseFloat(c[6].replace(/,/g, "")) || 0  // ไหลลงอ่าง
+    const outflow = parseFloat(c[7].replace(/,/g, "")) || 0  // ระบาย
+    data.push({ year: toWaterYear(yearBE, month), month, inflow, outflow })
+  }
+  return data
+}
+
+// ── FORMAT 2 PARSER ──────────────────────────────────────────────
+// Compact (ไม่มี tab คั่น) — regex จับตัวเลขต่อเนื่อง
+function parseFormat2(raw) {
+  const nm = raw.match(/อ่างเก็บน้ำ\s*([^\s]+)\s+จ\.([^\s\r\n,]+)/)
+  if (nm) { reservoirName = nm[1]; provinceName = nm[2] }
+  else    { reservoirName = "Reservoir"; provinceName = "" }
+
+  const thaiMonths = Object.keys(monthMap)
+  const mp = thaiMonths.join("|")
+  const rx = new RegExp(`\\d+\\s*(${mp})\\s+(\\d{4})([\\d.]+)([\\d.]+)([\\d.]+)([\\d.]+)([\\d.]+)([\\d.]+)([\\d.]+)([\\d.]+)`, "g")
+  const data = []
+  let m
+  while ((m = rx.exec(raw)) !== null) {
+    const month = monthMap[m[1]], yearBE = parseInt(m[2])
+    if (!month || isNaN(yearBE)) continue
+    const inflow  = parseFloat(m[9])  || 0
+    const outflow = parseFloat(m[10]) || 0
+    data.push({ year: toWaterYear(yearBE, month), month, inflow, outflow })
+  }
+
+  // fallback: line-by-line
+  if (data.length === 0) {
+    for (const line of raw.split(/\r?\n/)) {
+      let foundThai = null
+      for (const th of thaiMonths) { if (line.includes(th)) { foundThai = th; break } }
+      if (!foundThai) continue
+      const ym = line.match(new RegExp(foundThai + "\\s*(\\d{4})"))
+      if (!ym) continue
+      const yearBE = parseInt(ym[1]), month = monthMap[foundThai]
+      if (!month || isNaN(yearBE)) continue
+      const after = line.slice(line.indexOf(ym[0]) + ym[0].length)
+      const nums  = (after.match(/[\d.]+/g) || [])
+      if (nums.length < 8) continue
+      const inflow  = parseFloat(nums[6]) || 0
+      const outflow = parseFloat(nums[7]) || 0
+      data.push({ year: toWaterYear(yearBE, month), month, inflow, outflow })
+    }
+  }
+  return data
+}
+
+// ── LIVE DETECT ──────────────────────────────────────────────────
+document.getElementById("excelData").addEventListener("input", function () {
+  const v = this.value.trim()
+  setFormatBadge(v ? detectFormat(v) : 0)
+})
+
+function setFormatBadge(fmt) {
+  const badge = document.getElementById("formatBadge")
+  const label = document.getElementById("formatLabel")
+  badge.className = "format-detect"
+  if (fmt === 1) { badge.classList.add("fmt1"); label.textContent = "รูปแบบที่ 1 · เขื่อน / อ่างเก็บน้ำขนาดใหญ่" }
+  else if (fmt === 3) { badge.classList.add("fmt2"); label.textContent = "รูปแบบที่ 2 · อ่างเก็บน้ำขนาดกลาง (Tab)" }
+  else if (fmt === 2) { badge.classList.add("fmt2"); label.textContent = "รูปแบบที่ 2 · อ่างเก็บน้ำขนาดกลาง (Compact)" }
+  else label.textContent = "ยังไม่ได้วางข้อมูล"
+}
+
+// ── MAIN ─────────────────────────────────────────────────────────
+function generateTables() {
+  const raw = document.getElementById("excelData").value.trim()
+  if (!raw) { alert("กรุณาวางข้อมูลก่อน"); return }
+  const fmt  = detectFormat(raw)
+  setFormatBadge(fmt)
+  const data = fmt === 1 ? parseFormat1(raw) : fmt === 3 ? parseFormat3(raw) : parseFormat2(raw)
+  if (data.length === 0) { alert("ไม่พบข้อมูล กรุณาตรวจสอบรูปแบบ"); return }
+
+  document.getElementById("output").style.display = "block"
+  document.getElementById("exportBtn").disabled = false
+
+  const title = reservoirName + (provinceName ? " จ." + provinceName : "")
+  document.getElementById("inflowTitle").textContent  = " " + title
+  document.getElementById("outflowTitle").textContent = " " + title
+  document.getElementById("inflowSectionTitle").textContent  = "อ่างเก็บน้ำ" + title + " · ปริมาณน้ำไหลลงอ่าง (ล้าน ลบ.ม.)"
+  document.getElementById("outflowSectionTitle").textContent = "อ่างเก็บน้ำ" + title + " · ปริมาณน้ำระบาย (ล้าน ลบ.ม.)"
+
+  const years = [...new Set(data.map(d => d.year))].sort()
+  inflowTableData  = buildTableData(data, "inflow")
+  outflowTableData = buildTableData(data, "outflow")
+
+  const avgIn  = inflowTableData[inflowTableData.length - 1][13]
+  const avgOut = outflowTableData[outflowTableData.length - 1][13]
+
+  document.getElementById("metaBar").innerHTML = `
+    <div class="meta-item"><div class="meta-label">อ่างเก็บน้ำ</div><div class="meta-value">${title}</div></div>
+    <div class="meta-item"><div class="meta-label">ช่วงปีน้ำ (พ.ศ.)</div><div class="meta-value">${years[0]}–${years[years.length - 1]}</div></div>
+    <div class="meta-item"><div class="meta-label">จำนวนปีน้ำ</div><div class="meta-value">${years.length} ปี</div></div>
+    <div class="meta-item"><div class="meta-label">เฉลี่ย Inflow / ปี</div><div class="meta-value">${avgIn  != null ? avgIn.toFixed(3)  : "-"}</div></div>
+    <div class="meta-item"><div class="meta-label">เฉลี่ย Outflow / ปี</div><div class="meta-value">${avgOut != null ? avgOut.toFixed(3) : "-"}</div></div>
+  `
+  renderTable("inflowTableDiv",  inflowTableData)
+  renderTable("outflowTableDiv", outflowTableData)
+  inflowAvg  = inflowTableData[inflowTableData.length - 1].slice(1, 13)
+  outflowAvg = outflowTableData[outflowTableData.length - 1].slice(1, 13)
+  drawChart("inflowChart",  "Inflow",  inflowTableData,  inflowAvg,  true)
+  drawChart("outflowChart", "Outflow", outflowTableData, outflowAvg, false)
+}
+
+// ── BUILD TABLE DATA ──────────────────────────────────────────────
+function buildTableData(data, type) {
+  const years = [...new Set(data.map(d => d.year))].sort()
+  const mSum = {}, mCnt = {}
+  months.forEach(m => { mSum[m] = 0; mCnt[m] = 0 })
+  const sheet = [["ปีน้ำ (พ.ศ.)", ...months, "รวม (ล้าน ลบ.ม.)"]]
+  years.forEach(y => {
+    let total = 0
+    const row = [y]
+    months.forEach(m => {
+      const f = data.find(d => d.year === y && d.month === m)
+      if (f) {
+        const v = type === "inflow" ? f.inflow : f.outflow
+        total += v; mSum[m] += v; mCnt[m]++; row.push(v)
+      } else row.push(null)
+    })
+    row.push(total); sheet.push(row)
+  })
+  const avgRow = ["Average"]
+  let avgTotal = 0
+  months.forEach(m => {
+    const v = mCnt[m] ? mSum[m] / mCnt[m] : null
+    avgRow.push(v)
+    if (v !== null) avgTotal += v
+  })
+  avgRow.push(avgTotal)
+  sheet.push(avgRow)
+  return sheet
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────────
+function renderTable(id, tbl) {
+  let h = "<table><thead><tr>"
+  tbl[0].forEach(c => { h += `<th>${c}</th>` })
+  h += "</tr></thead><tbody>"
+  for (let i = 1; i < tbl.length - 1; i++) {
+    const row = tbl[i]; h += "<tr>"
+    row.forEach((cell, ci) => {
+      if (ci === 0) h += `<td>${row[0]}</td>`
+      else if (ci === row.length - 1) h += `<td><b>${cell !== null ? parseFloat(cell).toFixed(3) : "–"}</b></td>`
+      else h += cell !== null ? `<td>${parseFloat(cell).toFixed(3)}</td>` : `<td class="dash">–</td>`
+    })
+    h += "</tr>"
+  }
+  h += "</tbody><tfoot><tr>"
+  tbl[tbl.length - 1].forEach((cell, ci) => {
+    if (ci === 0) h += "<td>Average</td>"
+    else h += cell !== null ? `<td>${parseFloat(cell).toFixed(3)}</td>` : `<td class="dash">–</td>`
+  })
+  h += "</tr></tfoot></table>"
+  document.getElementById(id).innerHTML = h
+}
+
+// ── CHART ─────────────────────────────────────────────────────────
+const PAL = [
+  "#58a6ff","#3fb950","#f78166","#d2a8ff","#ffa657","#79c0ff",
+  "#56d364","#ff7b72","#bc8cff","#ffb77c","#a5d6ff","#85e89d",
+  "#e3b341","#f0883e","#7ee787","#cae8ff"
+]
+
+function drawChart(canvasId, label, tbl, avgData, isInflow) {
+  if (isInflow  && inflowChartObj)  { inflowChartObj.destroy();  inflowChartObj  = null }
+  if (!isInflow && outflowChartObj) { outflowChartObj.destroy(); outflowChartObj = null }
+  const datasets = []
+  for (let i = 1; i < tbl.length - 1; i++) {
+    const row = tbl[i]
+    datasets.push({
+      label: String(row[0]),
+      data: row.slice(1, 13).map(v => v !== null ? parseFloat(v) : null),
+      borderColor: PAL[(i - 1) % PAL.length], backgroundColor: "transparent",
+      borderWidth: 1.5, tension: .35, pointRadius: 2, spanGaps: true
+    })
+  }
+  datasets.push({
+    label: "Average",
+    data: avgData.map(v => v !== null ? parseFloat(v) : null),
+    borderColor: "#ffffff", backgroundColor: "rgba(255,255,255,.05)",
+    borderWidth: 3, borderDash: [8, 5], tension: .35,
+    pointRadius: 4, pointBackgroundColor: "#ffffff", spanGaps: true
+  })
+  const obj = new Chart(document.getElementById(canvasId), {
+    type: "line",
+    data: { labels: months, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { labels: { color: "#8b949e", font: { size: 10, family: "IBM Plex Mono" }, boxWidth: 20 } },
+        title: {
+          display: true,
+          text: `${label} — ${reservoirName}${provinceName ? " จ." + provinceName : ""} (ล้าน ลบ.ม.)`,
+          color: "#e6edf3", font: { size: 13, family: "IBM Plex Sans Thai" }
+        },
+        tooltip: {
+          backgroundColor: "#161b22", borderColor: "#30363d", borderWidth: 1,
+          titleColor: "#e6edf3", bodyColor: "#8b949e"
+        }
+      },
+      scales: {
+        x: { ticks: { color: "#8b949e", font: { size: 11 } }, grid: { color: "rgba(48,54,61,.5)" } },
+        y: {
+          ticks: { color: "#8b949e", font: { size: 11 } }, grid: { color: "rgba(48,54,61,.5)" },
+          title: { display: true, text: "ล้าน ลบ.ม.", color: "#8b949e", font: { size: 11 } }
+        }
+      }
+    }
+  })
+  if (isInflow) inflowChartObj = obj; else outflowChartObj = obj
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────────
+function clearAll() {
+  document.getElementById("excelData").value = ""
+  document.getElementById("output").style.display = "none"
+  document.getElementById("exportBtn").disabled = true
+  setFormatBadge(0)
+  if (inflowChartObj)  { inflowChartObj.destroy();  inflowChartObj  = null }
+  if (outflowChartObj) { outflowChartObj.destroy(); outflowChartObj = null }
+}
+
+// ── EXPORT EXCEL ─────────────────────────────────────────────────
+async function exportExcel() {
+  const wb = new ExcelJS.Workbook()
+  async function addSheet(name, tbl, canvasId) {
+    const ws = wb.addWorksheet(name)
+    const labelMap = { "Inflow": "ปริมาณน้ำไหลลงอ่าง", "Outflow": "ปริมาณน้ำระบาย" }
+    const titleRow = ws.addRow([reservoirName + (provinceName ? " จ." + provinceName : "") + " · " + labelMap[name] + " (ล้าน ลบ.ม.)"])
+    titleRow.getCell(1).font = { bold: true, size: 13, color: { argb: "FF58A6FF" } }
+    ws.addRow([])
+    tbl.forEach((r, ri) => {
+      const row = ws.addRow(r)
+      if (ri === 0) row.eachCell(c => {
+        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF21262D" } }
+        c.font = { bold: true, color: { argb: "FF8B949E" } }
+        c.alignment = { horizontal: "center" }
+      })
+      if (ri === tbl.length - 1) row.eachCell(c => { c.font = { bold: true, color: { argb: "FF3FB950" } } })
+    })
+    ws.columns.forEach((col, i) => { col.width = i === 0 ? 18 : 12 })
+    const imgData = document.getElementById(canvasId).toDataURL("image/png")
+    const imgId = wb.addImage({ base64: imgData, extension: "png" })
+    ws.addImage(imgId, { tl: { col: 0, row: tbl.length + 4 }, ext: { width: 900, height: 380 } })
+  }
+  await addSheet("Inflow",  inflowTableData,  "inflowChart")
+  await addSheet("Outflow", outflowTableData, "outflowChart")
+  const buf = await wb.xlsx.writeBuffer()
+  saveAs(new Blob([buf]), reservoirName + (provinceName ? "_จ." + provinceName : "") + ".xlsx")
+}
+
+</script>
 </body>
 </html>
