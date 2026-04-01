@@ -535,18 +535,56 @@ async function exportExcel() {
   async function addSheet(name, tbl, canvasId) {
     const ws = wb.addWorksheet(name)
     const labelMap = { "Inflow": "ปริมาณน้ำไหลลงอ่าง", "Outflow": "ปริมาณน้ำระบาย" }
+
+    // Row 1: title
     const titleRow = ws.addRow([reservoirName + (provinceName ? " จ." + provinceName : "") + " · " + labelMap[name] + " (ล้าน ลบ.ม.)"])
     titleRow.getCell(1).font = { bold: true, size: 13, color: { argb: "FF58A6FF" } }
+    // Row 2: blank
     ws.addRow([])
+
+    // tbl[0]=header, tbl[1..N-1]=data years, tbl[N]=Average
+    const nYears = tbl.length - 2          // จำนวนปีน้ำ
+    const headerExcelRow = 3               // header อยู่ที่ row 3
+    const dataStartRow   = 4               // data เริ่มที่ row 4
+    const dataEndRow     = dataStartRow + nYears - 1
+    const avgExcelRow    = dataEndRow + 1
+
     tbl.forEach((r, ri) => {
-      const row = ws.addRow(r)
-      if (ri === 0) row.eachCell(c => {
-        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF21262D" } }
-        c.font = { bold: true, color: { argb: "FF8B949E" } }
-        c.alignment = { horizontal: "center" }
-      })
-      if (ri === tbl.length - 1) row.eachCell(c => { c.font = { bold: true, color: { argb: "FF3FB950" } } })
+      if (ri === 0) {
+        // Header row
+        const row = ws.addRow(r)
+        row.eachCell(c => {
+          c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF21262D" } }
+          c.font = { bold: true, color: { argb: "FF8B949E" } }
+          c.alignment = { horizontal: "center" }
+        })
+      } else if (ri === tbl.length - 1) {
+        // Average row — ใส่สูตร AVERAGE รายเดือน และ SUM รวม
+        const avgRowData = [r[0]]  // "Average"
+        for (let ci = 1; ci <= 12; ci++) {
+          const col = String.fromCharCode(65 + ci)  // B=66=Apr ... M=77=Mar
+          avgRowData.push({ formula: `AVERAGE(${col}${dataStartRow}:${col}${dataEndRow})` })
+        }
+        // col N = SUM ของ average 12 เดือน
+        avgRowData.push({ formula: `SUM(B${avgExcelRow}:M${avgExcelRow})` })
+        const row = ws.addRow(avgRowData)
+        row.eachCell(c => {
+          c.font = { bold: true, color: { argb: "FF3FB950" } }
+          c.numFmt = "0.000"
+        })
+      } else {
+        // Data row — ใส่สูตร SUM ที่ col N (รวม)
+        const excelRow = dataStartRow + ri - 1
+        const rowData = r.slice(0, 13)  // col A-M (ปีน้ำ + 12 เดือน)
+        rowData.push({ formula: `SUM(B${excelRow}:M${excelRow})` })
+        const row = ws.addRow(rowData)
+        // format ตัวเลข
+        row.eachCell((c, ci) => {
+          if (ci > 1) c.numFmt = "0.000"
+        })
+      }
     })
+
     ws.columns.forEach((col, i) => { col.width = i === 0 ? 18 : 12 })
     const imgData = document.getElementById(canvasId).toDataURL("image/png")
     const imgId = wb.addImage({ base64: imgData, extension: "png" })
