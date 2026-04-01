@@ -250,7 +250,7 @@ function detectFormat(raw) {
     if (c.length >= 10) {
       const p = c[1]?.split(" ")
       if (p && monthMap[p[0]] && parseInt(p[1]) > 2400 &&
-          /^(เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ใต้|อีสาน)$/.test(c[2])) return 1
+          /^(เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ตะวันออก|ตะวันตก|ใต้|อีสาน)$/.test(c[2])) return 1
     }
     if (c.length === 9) {
       const p = c[1]?.split(" ")
@@ -264,7 +264,7 @@ function detectFormat(raw) {
 // [0]ลำดับ [1]เดือน+ปีพ.ศ. [2]ภาค [3]ความจุ [4]น้ำใช้การ
 // [5]ระดับน้ำ [6]น้ำในอ่าง [7]%รนก. [8]ไหลลงอ่าง [9]ระบาย
 function parseFormat1(raw) {
-  const nm = raw.match(/^([^\n\r\t]+?)\s+ภาค(?:เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ใต้)/m)
+  const nm = raw.match(/^([^\n\r\t]+?)\s+ภาค(?:เหนือ|กลาง|ตะวันออกเฉียงเหนือ|ตะวันออก|ตะวันตก|ใต้)/m)
   reservoirName = nm ? nm[1].trim() : "Reservoir"
   provinceName  = ""
   const data = []
